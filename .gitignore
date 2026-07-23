@@ -1,0 +1,12 @@
+# Rust build artifacts
+/target/
+
+# IDE & Editor files
+.zed/
+.vscode/
+.idea/
+*.iml
+
+# OS-generated metadata
+.DS_Store
+Thumbs.db
