@@ -92,7 +92,7 @@ fn main() {
             MOVE_INTERVAL_SECONDS,
             TimerMode::Repeating,
         )))
-        .add_systems(Startup, (setup_camera, setup_game))
+        .add_systems(Startup, (setup_camera, setup_game, setup_border))
         .add_systems(Update, (handle_input, game_loop, position_translation))
         .add_systems(
             Update,
@@ -137,6 +137,31 @@ fn setup_game(mut commands: Commands, mut segments: ResMut<SnakeSegments>) {
     segments.0.push(head_entity);
 
     spawn_food(&mut commands, &segments);
+}
+
+fn setup_border(mut commands: Commands) {
+    // 1. Criamos um container invisível que se expande por toda a tela
+    commands
+        .spawn(Node {
+            width: Val::Percent(100.0),  // Ocupa 100% da largura disponível
+            height: Val::Percent(100.0), // Ocupa 100% da altura disponível
+
+            // Alinhamento Flexbox para centralizar os filhos
+            justify_content: JustifyContent::Center, // Centraliza horizontalmente
+            align_items: AlignItems::Center,         // Centraliza verticalmente
+            ..default()
+        }) // 2. Colocamos a sua borda dentro deste container
+        .with_children(|parent| {
+            parent.spawn((
+                Node {
+                    width: Val::Px(GRID_WIDTH as f32 * CELL_SIZE),
+                    height: Val::Px(GRID_WIDTH as f32 * CELL_SIZE),
+                    border: UiRect::all(Val::Px(2.0)),
+                    ..default()
+                },
+                BorderColor::all(Color::srgb(0.3, 0.3, 0.3)), // Vermelho
+            ));
+        });
 }
 
 fn handle_input(keyboard: Res<ButtonInput<KeyCode>>, mut last_dir: ResMut<LastInputDirection>) {
