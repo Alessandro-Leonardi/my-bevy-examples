@@ -2438,6 +2438,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ex02-bevy-bird"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "rand 0.8.7",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
