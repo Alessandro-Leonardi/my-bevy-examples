@@ -38,6 +38,12 @@ impl Default for Gravity {
 #[derive(Component, Default)]
 struct Velocity(f32);
 
+// OBS: What to select a default image filter:
+// .add_plugins(DefaultPlugins.set(ImagePlugin {
+//  default_sampler:
+//      ImageSamplerDescriptor::nearest(),
+// }))
+
 fn main() -> AppExit {
     flat_submodule::hello_flat_module();
     nested_submodule::handle_auth();
