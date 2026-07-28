@@ -2430,7 +2430,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ex01-bevy-snake"
+name = "ex01_bevy_snake"
 version = "0.1.0"
 dependencies = [
  "bevy",
@@ -2438,7 +2438,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ex02-bevy-bird"
+name = "ex02_bevy_bird"
 version = "0.1.0"
 dependencies = [
  "bevy",

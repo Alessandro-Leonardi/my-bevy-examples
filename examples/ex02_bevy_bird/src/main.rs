@@ -1,10 +1,7 @@
 // ex02-bevy-bird\src\main.rs
 // Imports:
 use bevy::{camera::ScalingMode, prelude::*};
-
-// Constants:
-pub const CANVAS_SIZE: Vec2 = Vec2::new(480.0, 270.0);
-pub const PLAYER_SIZE: f32 = 25.0;
+use ex02_bevy_bird::*;
 
 // Flat Structure: Single-level Submodules:
 mod flat_submodule;

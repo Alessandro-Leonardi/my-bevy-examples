@@ -1,5 +1,5 @@
 [package]
-name = "ex02-bevy-bird"
+name = "ex01_bevy_snake"
 version = "0.1.0"
 edition = "2024"
 
