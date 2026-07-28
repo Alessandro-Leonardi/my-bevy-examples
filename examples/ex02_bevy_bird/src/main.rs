@@ -45,6 +45,7 @@ fn main() -> AppExit {
     let mut app = App::new();
 
     app.add_plugins(DefaultPlugins)
+        .add_plugins(PipePlugin)
         .init_state::<GameMode>()
         .add_systems(Startup, startup)
         .add_systems(FixedUpdate, gravity.run_if(in_state(GameMode::Started)))
