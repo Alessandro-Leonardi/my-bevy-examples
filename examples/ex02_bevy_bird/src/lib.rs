@@ -1,4 +1,8 @@
-use bevy::{image::ImageLoaderSettings, prelude::*};
+use std::time::Duration;
+
+use bevy::{
+    camera::ScalingMode, image::ImageLoaderSettings, prelude::*, time::common_conditions::on_timer,
+};
 
 // Constants:
 pub const CANVAS_SIZE: Vec2 = Vec2::new(480.0, 270.0);
@@ -6,7 +10,7 @@ pub const PLAYER_SIZE: f32 = 25.0;
 
 const PIPE_SIZE: Vec2 = Vec2::new(32.0, CANVAS_SIZE.y);
 const GAP_SIZE: f32 = 100.0;
-const PIPE_SPEED: f32 = 20.0;
+const PIPE_SPEED: f32 = 150.0;
 
 pub struct PipePlugin;
 
@@ -24,8 +28,11 @@ pub struct PointsGate;
 
 impl Plugin for PipePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, spawn_pipes.run_if(run_once))
-            .add_systems(FixedUpdate, shift_pipes_to_the_left);
+        app.add_systems(
+            FixedUpdate,
+            spawn_pipes.run_if(on_timer(Duration::from_millis(1000))),
+        )
+        .add_systems(FixedUpdate, (shift_pipes_to_the_left, despawn_pipes));
     }
 }
 
@@ -45,7 +52,7 @@ fn spawn_pipes(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     // POSSIBLE ERROR WITH THE FOLLOWING TWO VARIABLES:
     let image_mode = SpriteImageMode::Auto;
-    let transform = Transform::from_xyz(0.0, 0.0, 1.0);
+    let transform = Transform::from_xyz(CANVAS_SIZE.x / 2.0, 0.0, 1.0);
 
     commands.spawn((
         transform,
@@ -88,5 +95,30 @@ fn spawn_pipes(mut commands: Commands, asset_server: Res<AssetServer>) {
 pub fn shift_pipes_to_the_left(mut pipes: Query<&mut Transform, With<Pipe>>, time: Res<Time>) {
     for mut pipe in &mut pipes {
         pipe.translation.x -= PIPE_SPEED * time.delta_secs();
+    }
+}
+
+fn optional_count_pipes(query: Query<&Pipe>) {
+    info!("> {} pipes exist.", query.iter().len());
+}
+
+fn optional_change_camera(mut commands: Commands) {
+    commands.spawn((
+        Camera2d,
+        Projection::Orthographic(OrthographicProjection {
+            scaling_mode: ScalingMode::AutoMax {
+                max_width: CANVAS_SIZE.x * 4.0,
+                max_height: CANVAS_SIZE.y * 4.0,
+            },
+            ..OrthographicProjection::default_2d()
+        }),
+    ));
+}
+
+fn despawn_pipes(mut commands: Commands, pipes: Query<(Entity, &Transform), With<Pipe>>) {
+    for (entity, transform) in pipes.iter() {
+        if transform.translation.x < -(CANVAS_SIZE.x / 2.0 + PIPE_SIZE.x) {
+            commands.entity(entity).despawn();
+        }
     }
 }
