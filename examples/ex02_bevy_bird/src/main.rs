@@ -9,35 +9,6 @@ mod flat_submodule;
 // Nested Structure: Submodules with their own Submodules:
 mod nested_submodule;
 
-// Events:
-#[derive(Event)]
-struct EndGame;
-
-// Resources / States:
-#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
-enum GameMode {
-    #[default]
-    Waiting,
-    Started,
-}
-
-// Components:
-#[derive(Component)]
-#[require(Gravity, Velocity)] // Bevy automatic component instantiation
-struct Player;
-
-#[derive(Component)]
-struct Gravity(f32);
-
-impl Default for Gravity {
-    fn default() -> Self {
-        Gravity(400.0)
-    }
-}
-
-#[derive(Component, Default)]
-struct Velocity(f32);
-
 // OBS: What to select a default image filter:
 // .add_plugins(DefaultPlugins.set(ImagePlugin {
 //  default_sampler:
