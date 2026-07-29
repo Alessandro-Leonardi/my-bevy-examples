@@ -3,6 +3,9 @@
 use bevy::{camera::ScalingMode, prelude::*};
 use ex02_bevy_bird::*;
 
+use bevy::color::palettes::tailwind::{RED_400, SLATE_50};
+use bevy::math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume};
+
 // Flat Structure: Single-level Submodules:
 mod flat_submodule;
 
@@ -15,23 +18,43 @@ mod nested_submodule;
 //      ImageSamplerDescriptor::nearest(),
 // }))
 
+#[derive(Resource, Default)]
+struct Score(u32);
+
+#[derive(Event)]
+pub struct ScorePoint;
+
+#[derive(Component)]
+struct ScoreText;
+
 fn main() -> AppExit {
     flat_submodule::hello_flat_module();
     nested_submodule::handle_auth();
 
     let mut app = App::new();
 
-    app.add_plugins(DefaultPlugins)
+    app.init_resource::<Score>()
+        .add_plugins(DefaultPlugins)
         .add_plugins(PipePlugin)
         .init_state::<GameMode>()
+        .add_observer(|_trigger: On<ScorePoint>, mut score: ResMut<Score>| {
+            score.0 += 1;
+        })
         .add_systems(Startup, startup)
-        .add_systems(FixedUpdate, gravity.run_if(in_state(GameMode::Started)))
         // Run this system ONLY if the gameplay is actually live
         .add_systems(
-            FixedUpdate,
-            check_in_bounds.run_if(in_state(GameMode::Started)),
+            Update,
+            (controls, score_update.run_if(resource_changed::<Score>)),
         )
-        .add_systems(Update, controls)
+        .add_systems(
+            FixedUpdate,
+            (
+                gravity.run_if(in_state(GameMode::Started)),
+                check_in_bounds.run_if(in_state(GameMode::Started)),
+                check_collisions,
+            )
+                .chain(),
+        )
         // FIX 1: Use .add_observer instead of .observe
         .add_observer(respawn_on_endgame)
         .run()
@@ -57,6 +80,22 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..default()
         },
         Transform::from_xyz(-CANVAS_SIZE.x / 4.0, 0.0, 1.0),
+    ));
+
+    commands.spawn((
+        Node {
+            width: percent(100),
+            margin: px(20.0).top(),
+            ..default()
+        },
+        Text::new("0"),
+        TextLayout::justify(Justify::Center),
+        TextFont {
+            font_size: 33.0.into(),
+            ..default()
+        },
+        TextColor(SLATE_50.into()),
+        ScoreText,
     ));
 }
 
@@ -107,12 +146,14 @@ fn respawn_on_endgame(
     mut commands: Commands,
     player_query: Query<Entity, With<Player>>,
     mut next_state: ResMut<NextState<GameMode>>,
+    mut score: ResMut<Score>,
 ) {
     // FIX 3: Use .single() instead of .get_single()
     let player_entity = player_query.single();
 
     match player_entity {
         Ok(player) => {
+            score.0 = 0;
             commands.entity(player).insert((
                 Transform::from_xyz(-CANVAS_SIZE.x / 4.0, 0.0, 1.0),
                 Velocity(0.0),
@@ -127,4 +168,72 @@ fn respawn_on_endgame(
 
     next_state.set(GameMode::Waiting);
     println!("Game Reset Successful!");
+}
+
+fn check_collisions(
+    mut commands: Commands,
+    player: Single<(&Sprite, Entity), With<Player>>,
+    pipe_segments: Query<(&Sprite, Entity), Or<(With<PipeTop>, With<PipeBottom>)>>,
+    pipe_gaps: Query<(&Sprite, Entity), With<PointsGate>>,
+    mut gizmos: Gizmos,
+    transform_helper: TransformHelper,
+) -> Result<()> {
+    let player_transform = transform_helper.compute_global_transform(player.1)?;
+
+    let player_collider =
+        BoundingCircle::new(player_transform.translation().xy(), PLAYER_SIZE / 2.0);
+
+    gizmos.circle_2d(
+        player_transform.translation().xy(),
+        PLAYER_SIZE / 2.0,
+        RED_400,
+    );
+
+    for (sprite, entity) in &pipe_segments {
+        let pipe_transform = transform_helper.compute_global_transform(entity)?;
+
+        let pipe_collider = Aabb2d::new(
+            pipe_transform.translation().xy(),
+            sprite.custom_size.unwrap() / 2.0,
+        );
+
+        gizmos.rect_2d(
+            pipe_transform.translation().xy(),
+            sprite.custom_size.unwrap(),
+            RED_400,
+        );
+
+        if player_collider.intersects(&pipe_collider) {
+            commands.trigger(EndGame);
+        }
+    }
+
+    for (sprite, entity) in &pipe_gaps {
+        let gap_transform = transform_helper.compute_global_transform(entity)?;
+
+        let gap_collider = Aabb2d::new(
+            gap_transform.translation().xy(),
+            sprite.custom_size.unwrap().xy(),
+        );
+
+        gizmos.rect_2d(
+            gap_transform.translation().xy(),
+            sprite.custom_size.unwrap().xy(),
+            RED_400,
+        );
+
+        if player_collider.intersects(&gap_collider) {
+            commands.trigger(ScorePoint);
+
+            commands.entity(entity).despawn();
+        }
+    }
+
+    Ok(())
+}
+
+fn score_update(mut query: Query<&mut Text, With<ScoreText>>, score: Res<Score>) {
+    for mut span in &mut query {
+        span.0 = score.0.to_string();
+    }
 }

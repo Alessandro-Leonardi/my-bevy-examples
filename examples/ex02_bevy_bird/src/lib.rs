@@ -1,8 +1,5 @@
 use std::time::Duration;
 
-use bevy::color::palettes::tailwind::RED_400;
-use bevy::math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume};
-
 use bevy::{
     camera::ScalingMode, image::ImageLoaderSettings, prelude::*, time::common_conditions::on_timer,
 };
@@ -64,8 +61,7 @@ impl Plugin for PipePlugin {
             FixedUpdate,
             spawn_pipes.run_if(on_timer(Duration::from_millis(1000))),
         )
-        .add_systems(FixedUpdate, (shift_pipes_to_the_left, despawn_pipes))
-        .add_systems(Update, check_collisions);
+        .add_systems(FixedUpdate, (shift_pipes_to_the_left, despawn_pipes));
     }
 }
 
@@ -154,66 +150,4 @@ fn despawn_pipes(mut commands: Commands, pipes: Query<(Entity, &Transform), With
             commands.entity(entity).despawn();
         }
     }
-}
-
-fn check_collisions(
-    mut commands: Commands,
-    player: Single<(&Sprite, Entity), With<Player>>,
-    pipe_segments: Query<(&Sprite, Entity), Or<(With<PipeTop>, With<PipeBottom>)>>,
-    pipe_gaps: Query<(&Sprite, Entity), With<PointsGate>>,
-    mut gizmos: Gizmos,
-    transform_helper: TransformHelper,
-) -> Result<()> {
-    let player_transform = transform_helper.compute_global_transform(player.1)?;
-
-    let player_collider =
-        BoundingCircle::new(player_transform.translation().xy(), PLAYER_SIZE / 2.0);
-
-    gizmos.circle_2d(
-        player_transform.translation().xy(),
-        PLAYER_SIZE / 2.0,
-        RED_400,
-    );
-
-    for (sprite, entity) in &pipe_segments {
-        let pipe_transform = transform_helper.compute_global_transform(entity)?;
-
-        let pipe_collider = Aabb2d::new(
-            pipe_transform.translation().xy(),
-            sprite.custom_size.unwrap() / 2.0,
-        );
-
-        gizmos.rect_2d(
-            pipe_transform.translation().xy(),
-            sprite.custom_size.unwrap(),
-            RED_400,
-        );
-
-        if player_collider.intersects(&pipe_collider) {
-            commands.trigger(EndGame);
-        }
-    }
-
-    for (sprite, entity) in &pipe_gaps {
-        let gap_transform = transform_helper.compute_global_transform(entity)?;
-
-        let gap_collider = Aabb2d::new(
-            gap_transform.translation().xy(),
-            sprite.custom_size.unwrap().xy(),
-        );
-
-        gizmos.rect_2d(
-            gap_transform.translation().xy(),
-            sprite.custom_size.unwrap().xy(),
-            RED_400,
-        );
-
-        if player_collider.intersects(&gap_collider) {
-            info!("Score a point");
-
-            commands.entity(entity).despawn();
-        }
-    }
-
-    Ok(())
 }

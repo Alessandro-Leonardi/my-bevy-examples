@@ -1,5 +1,8 @@
 
 (bevy::prelude)
+Enum SpriteImageMode
+
+(bevy::prelude)
 Struct Transform 
 
 (bevy::prelude)
@@ -21,6 +24,7 @@ Struct Or
 
 (bevy)
 Create gizmos
+> The **`bevy_gizmos`** crate provides an **immediate mode drawing API** for the Bevy game engine. Its primary purpose is **visual debugging**, allowing developers to easily draw lines, shapes, and other debug visuals directly in their 3D or 2D scenes.
 
 OBS:
 > Create Avian3d
