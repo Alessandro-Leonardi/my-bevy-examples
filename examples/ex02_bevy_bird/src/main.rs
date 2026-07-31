@@ -1,3 +1,5 @@
+use bevy::color::Color;
+
 // ex02-bevy-bird\src\main.rs
 // Imports:
 use bevy::{camera::ScalingMode, prelude::*};
@@ -235,5 +237,42 @@ fn check_collisions(
 fn score_update(mut query: Query<&mut Text, With<ScoreText>>, score: Res<Score>) {
     for mut span in &mut query {
         span.0 = score.0.to_string();
+    }
+}
+
+// Don't know where to place the following code:
+fn load_simple_background(mut commands: Commands, asset_server: Res<AssetServer>) -> () {
+    let custom_size = Some(Vec2::splat(CANVAS_SIZE.x));
+
+    let my_sprite = Sprite {
+        image: asset_server.load("background_color_grass.png"),
+        custom_size: custom_size,
+        ..default()
+    };
+
+    let my_transform = Transform::default();
+
+    let my_bundle = (my_sprite, my_transform);
+
+    commands.spawn(my_bundle);
+}
+
+fn change_the_bird_color(mut commands: Commands, asset_server: Res<AssetServer>) -> () {
+    let my_player: Player = Player;
+
+    let my_custom_size: Option<Vec2> = Some(Vec2::splat(PLAYER_SIZE));
+    let my_image: Handle<Image> = asset_server.load("bevy_bird.png");
+
+    if let Ok(my_color) = Srgba::hex("#282828") {
+        let my_sprite: Sprite = Sprite {
+            custom_size: my_custom_size,
+            image: my_image,
+            color: Color::Srgba(my_color),
+            ..default()
+        };
+
+        let my_bundle = ();
+
+        commands.spawn(my_bundle);
     }
 }
