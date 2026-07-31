@@ -2,11 +2,11 @@ use bevy::color::Color;
 
 // ex02-bevy-bird\src\main.rs
 // Imports:
-use bevy::{camera::ScalingMode, prelude::*};
+// use bevy::{camera::ScalingMode, prelude::*};
 use ex02_bevy_bird::*;
 
-use bevy::color::palettes::tailwind::{RED_400, SLATE_50};
-use bevy::math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume};
+// use bevy::color::palettes::tailwind::{RED_400, SLATE_50};
+// use bevy::math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume};
 
 // Flat Structure: Single-level Submodules:
 mod flat_submodule;
@@ -19,6 +19,36 @@ mod nested_submodule;
 //  default_sampler:
 //      ImageSamplerDescriptor::nearest(),
 // }))
+
+use ::bevy::{
+    camera::ScalingMode,
+    image::ImageAddressMode,
+    math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume},
+    prelude::*,
+    render::render_resource::AsBindGroup,
+    shader::ShaderRef,
+    sprite_render::{Material2d, Material2dPlugin},
+};
+
+use bevy::{
+    color::palettes::tailwind::{RED_400, SLATE_50},
+    image::ImageLoaderSettings,
+};
+
+// use flappy_bird::*;
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct BackgroundMaterial {
+    #[texture(0)]
+    #[sampler(1)]
+    pub color_texture: Handle<Image>,
+}
+
+impl Material2d for BackgroundMaterial {
+    fn fragment_shader() -> ShaderRef {
+        return "background.wgsl".into();
+    }
+}
 
 #[derive(Resource, Default)]
 struct Score(u32);
@@ -38,6 +68,7 @@ fn main() -> AppExit {
     app.init_resource::<Score>()
         .add_plugins(DefaultPlugins)
         .add_plugins(PipePlugin)
+        .add_plugins(Material2dPlugin::<BackgroundMaterial>::default())
         .init_state::<GameMode>()
         .add_observer(|_trigger: On<ScorePoint>, mut score: ResMut<Score>| {
             score.0 += 1;
@@ -62,7 +93,12 @@ fn main() -> AppExit {
         .run()
 }
 
-fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn startup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<BackgroundMaterial>>,
+) {
     commands.spawn((
         Camera2d,
         Projection::Orthographic(OrthographicProjection {
@@ -98,6 +134,50 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         TextColor(SLATE_50.into()),
         ScoreText,
+    ));
+
+    let sprite_background = Mesh2d(meshes.add(Rectangle::new(CANVAS_SIZE.x, CANVAS_SIZE.y)));
+
+    commands.spawn((
+        Mesh2d(meshes.add(Rectangle::new(CANVAS_SIZE.x, CANVAS_SIZE.y))),
+        MeshMaterial2d(materials.add(BackgroundMaterial {
+            color_texture: asset_server.load_with_settings(
+                "background_color_grass.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings
+                        .sampler
+                        .get_or_init_descriptor()
+                        .set_address_mode(ImageAddressMode::Repeat);
+                },
+            ),
+        })),
+    ));
+
+    let handle: Handle<Image> = asset_server
+        .load_builder()
+        .with_settings(|settings: &mut ImageLoaderSettings| {
+            settings
+                .sampler
+                .get_or_init_descriptor()
+                .set_address_mode(ImageAddressMode::Repeat);
+        })
+        .load("background_color_grass.png");
+
+    commands.spawn((
+        Mesh2d(meshes.add(Rectangle::new(CANVAS_SIZE.x, CANVAS_SIZE.y))),
+        MeshMaterial2d(
+            materials.add(BackgroundMaterial {
+                color_texture: asset_server
+                    .load_builder()
+                    .with_settings(|settings: &mut ImageLoaderSettings| {
+                        settings
+                            .sampler
+                            .get_or_init_descriptor()
+                            .set_address_mode(ImageAddressMode::Repeat);
+                    })
+                    .load("background_color_grass.png"),
+            }),
+        ),
     ));
 }
 
@@ -271,7 +351,7 @@ fn change_the_bird_color(mut commands: Commands, asset_server: Res<AssetServer>)
             ..default()
         };
 
-        let my_bundle = ();
+        let my_bundle = (my_player, my_sprite);
 
         commands.spawn(my_bundle);
     }
